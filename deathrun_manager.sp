@@ -87,13 +87,30 @@ public OnConfigsExecuted()
 	}
 }
 
+public IsValidClient(client)
+{
+	if (client == 0)
+		return false;
+
+	if (!IsClientConnected(client))
+		return false;
+
+	if (IsFakeClient(client))
+		return false;
+
+	if (!IsClientInGame(client))
+		return false;
+
+	return true;
+}
+
 public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if (GetConVarInt(deathrun_enabled) == 1 && (GetConVarInt(deathrun_swapteam) == 1))
 	{
 		for (new i = 1; i < MaxClients; i++)
 		{
-			if (GetClientTeam(i) == TEAM_T)
+			if (IsValidClient(i) && GetClientTeam(i) == TEAM_T)
 			{
 				CS_SwitchTeam(i, TEAM_CT);
 				movect(GetRandomPlayer(TEAM_CT));
