@@ -116,7 +116,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 
 	if (GetConVarInt(deathrun_enabled) == 1 && (GetClientTeam(client) == CS_TEAM_T))
-		CreateTimer(1.0, Timer_PlayerDeath, client);
+		CreateTimer(0.2, Timer_PlayerDeath, client);
 }
 
 /**
@@ -139,7 +139,9 @@ public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 		for (new i = 1; i < MaxClients; i++)
 		{
 			if (IsValidClient(i) && (GetClientTeam(i) == CS_TEAM_T))
-				CreateTimer(1.0, Timer_RoundEnd, i);
+			{
+				CreateTimer(0.4, Timer_RoundEnd, i);
+			}
 		}
 	}
 }
