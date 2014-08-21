@@ -4,8 +4,10 @@
 #include <sdktools>
 #include <cstrike>
 
-#define MESS "[iesaba] %s"
+#define MESS           "[iesaba] %s"
 #define PLUGIN_VERSION "1.3"
+#define MODEL_CT       "models/player/ctm_st6.mdl"
+#define MODEL_TR       "models/player/tm_phoenix.mdl"
 
 new Handle:deathrun_manager_version = INVALID_HANDLE;
 new Handle:deathrun_enabled         = INVALID_HANDLE;
@@ -48,9 +50,13 @@ public OnConfigsExecuted()
 	GetCurrentMap(mapname, sizeof(mapname));
 
 	if ((strncmp(mapname, "dr_", 3, false) == 0) || (strncmp(mapname, "deathrun_", 9, false) == 0) || (strncmp(mapname, "dtka_", 5, false) == 0))
+	{
 		SetConVarInt(deathrun_enabled, 1);
+	}
 	else
+	{
 		SetConVarInt(deathrun_enabled, 0);
+	}
 }
 
 /**
@@ -58,8 +64,8 @@ public OnConfigsExecuted()
  */
 public OnMapStart()
 {
-	PrecacheModel("models/player/tm_leet_varianta.mdl");
-	PrecacheModel("models/player/ctm_sas.mdl");
+	PrecacheModel(MODEL_CT);
+	PrecacheModel(MODEL_TR);
 }
 
 /**
@@ -69,8 +75,11 @@ public Action:BlockKill(client, const String:command[], args)
 {
 	if (GetConVarInt(deathrun_enabled) == 1)
 	{
-		PrintCenterText(client, "死ぬことから逃げないで欲しいですよ");
-		return Plugin_Handled;
+		if (GetClientTeam(client) == CS_TEAM_T)
+		{
+			PrintCenterText(client, "TR can not use the kill command.\nTRはkillコマンドを使えません。");
+			return Plugin_Handled;
+		}
 	}
 
 	return Plugin_Continue;
@@ -82,7 +91,9 @@ public Action:BlockKill(client, const String:command[], args)
 public Action:TeamJoin(client, const String:command[], args)
 {
 	if (args == 0)
+	{
 		return Plugin_Continue;
+	}
 
 	if (GetConVarInt(deathrun_enabled) == 1)
 	{
@@ -116,7 +127,9 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 
 	if (GetConVarInt(deathrun_enabled) == 1 && (GetClientTeam(client) == CS_TEAM_T))
+	{
 		CreateTimer(0.2, Timer_PlayerDeath, client);
+	}
 }
 
 /**
@@ -125,7 +138,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 public Action:Timer_PlayerDeath(Handle:timer, any:client)
 {
 	CS_SwitchTeam(client, CS_TEAM_CT);
-	SetEntityModel(client, "models/player/ctm_sas.mdl");
+	SetEntityModel(client, MODEL_CT);
 	PrintToChat(client, MESS, "TRが死亡。CTへ移動");
 }
 
@@ -154,12 +167,12 @@ public Action:Timer_RoundEnd(Handle:timer, any:client)
 	new counter = GetRandomPlayer(CS_TEAM_CT);
 
 	CS_SwitchTeam(client, CS_TEAM_CT);
-	SetEntityModel(client, "models/player/ctm_sas.mdl");
+	SetEntityModel(client, MODEL_CT);
 
 	if ((counter != -1) && (GetTeamClientCount(CS_TEAM_T) == 0))
 	{
 		CS_SwitchTeam(counter, CS_TEAM_T);
-		SetEntityModel(counter, "models/player/tm_leet_varianta.mdl");
+		SetEntityModel(counter, MODEL_TR);
 		PrintToChatAll(MESS, "CTのプレイヤー1人をTRに移動");
 	}
 }
@@ -167,14 +180,16 @@ public Action:Timer_RoundEnd(Handle:timer, any:client)
 /**
  * ランダムに指定されたチームのプレイヤーを取得
  */
-static GetRandomPlayer(team)
+stock GetRandomPlayer(team)
 {
 	new clients[MaxClients+1], clientCount;
 
 	for (new i = 1; i <= MaxClients; i++)
 	{
 		if (IsValidClient(i) && (GetClientTeam(i) == team))
+		{
 			clients[clientCount++] = i;
+		}
 	}
 
 	return (clientCount == 0) ? -1 : clients[GetRandomInt(0, clientCount-1)];
@@ -183,10 +198,12 @@ static GetRandomPlayer(team)
 /**
  * 指定されたプレイヤーが本物か確認
  */
-static IsValidClient(client)
+stock IsValidClient(client)
 {
-	if (client == 0 || !IsClientConnected(client) || IsFakeClient(client) || !IsClientInGame(client))
+	if (client <= 0 || !IsClientConnected(client) || IsFakeClient(client) || !IsClientInGame(client))
+	{
 		return false;
+	}
 
 	return true;
 }
