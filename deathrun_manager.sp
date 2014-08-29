@@ -12,6 +12,7 @@
 new Handle:deathrun_manager_version = INVALID_HANDLE;
 new Handle:deathrun_enabled         = INVALID_HANDLE;
 new Handle:deathrun_limit_terror    = INVALID_HANDLE;
+new bool:isRoundEnd                 = false;
 
 public Plugin:myinfo =
 {
@@ -31,6 +32,7 @@ public OnPluginStart()
 	AddCommandListener(TeamJoin, "jointeam");
 
 	HookEvent("player_death", Event_PlayerDeath);
+	HookEvent("round_start", Event_RoundStart);
 	HookEvent("round_end", Event_RoundEnd);
 
 	deathrun_manager_version = CreateConVar("deathrun_manager_version", PLUGIN_VERSION, "Deathrun Manager version; not changeable", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
@@ -106,12 +108,12 @@ public Action:TeamJoin(client, const String:command[], args)
 
 		if ((argg == CS_TEAM_T) && (countTR >= limitTR))
 		{
-			PrintToChat(client, MESS, "TRに1人以上いますよCTに誰も居ないので行ってね");
+			PrintToChat(client, MESS, "CTに入ってください");
 			return Plugin_Handled;
 		}
 		else if ((argg == CS_TEAM_CT) && (countTR == 0 && countCT >= 1))
 		{
-			PrintToChat(client, MESS, "CTに1人以上居ますがTRに誰も居ないので行ってね");
+			PrintToChat(client, MESS, "TRに入ってください");
 			return Plugin_Handled;
 		}
 	}
@@ -126,7 +128,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 
-	if (GetConVarInt(deathrun_enabled) == 1 && (GetClientTeam(client) == CS_TEAM_T))
+	if (GetConVarInt(deathrun_enabled) == 1 && (GetClientTeam(client) == CS_TEAM_T) && !isRoundEnd)
 	{
 		CreateTimer(0.2, Timer_PlayerDeath, client);
 	}
@@ -143,12 +145,23 @@ public Action:Timer_PlayerDeath(Handle:timer, any:client)
 }
 
 /**
+ * ラウンドが開始した時
+ */
+public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	isRoundEnd = false;
+}
+
+
+/**
  * ラウンドが終了した時
  */
 public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
 {
 	if (GetConVarInt(deathrun_enabled) == 1)
 	{
+		isRoundEnd = true;
+
 		for (new i = 1; i < MaxClients; i++)
 		{
 			if (IsValidClient(i) && (GetClientTeam(i) == CS_TEAM_T))
